@@ -91,6 +91,7 @@ namespace GeheimLauncher
             form.Show();
         }
 
+        // Main-Methode für die Windows Forms-Anwendung
         [STAThread]
         public static void Main()
         {
