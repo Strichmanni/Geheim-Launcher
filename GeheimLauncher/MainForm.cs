@@ -22,38 +22,29 @@ namespace GeheimLauncher
             this.buttonInstallations = new Button();
             this.buttonAddons = new Button();
             this.SuspendLayout();
-            // 
+            
             // panelSidebar
-            // 
             this.panelSidebar.BackColor = System.Drawing.SystemColors.ControlDark;
             this.panelSidebar.Dock = DockStyle.Left;
             this.panelSidebar.Width = 200;
             this.panelSidebar.AutoScroll = true;
 
-            // 
             // buttonHome
-            // 
             this.buttonHome.Location = new System.Drawing.Point(10, 10);
             this.buttonHome.Text = "Home";
             this.buttonHome.Click += new EventHandler(this.buttonHome_Click);
 
-            // 
             // buttonInstallations
-            // 
             this.buttonInstallations.Location = new System.Drawing.Point(10, 50);
             this.buttonInstallations.Text = "Installationen";
             this.buttonInstallations.Click += new EventHandler(this.buttonInstallations_Click);
 
-            // 
             // buttonAddons
-            // 
             this.buttonAddons.Location = new System.Drawing.Point(10, 90);
             this.buttonAddons.Text = "Addons";
             this.buttonAddons.Click += new EventHandler(this.buttonAddons_Click);
 
-            // 
             // MainForm
-            // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
@@ -89,15 +80,6 @@ namespace GeheimLauncher
             form.Dock = DockStyle.Fill;
             panelSidebar.Controls.Add(form);
             form.Show();
-        }
-
-        // Main-Methode für die Windows Forms-Anwendung
-        [STAThread]
-        public static void Main()
-        {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm());
         }
     }
 }
