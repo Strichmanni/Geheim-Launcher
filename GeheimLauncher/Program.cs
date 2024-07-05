@@ -2,77 +2,116 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using Terminal.Gui;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace GeheimLauncher
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            Application.Init();
+            Console.WriteLine("Geheim-Launcher started...");
 
-            // Erstellen und anzeigen des Hauptfensters
-            var mainWindow = new MainWindow();
-            Application.Top.Add(mainWindow);
+            // Pfad zum Installationsverzeichnis
+            string installDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "GeheimLauncher");
 
-            Application.Run();
+            // Erstellen des Installationsverzeichnisses, falls es nicht existiert
+            if (!Directory.Exists(installDirectory))
+            {
+                Directory.CreateDirectory(installDirectory);
+            }
+
+            // GitHub Repository URL
+            string repoUrl = "https://api.github.com/repos/Strichmanni/files-ext/contents";
+            List<RepositoryFile> repositoryFiles = await DownloadRepositoryFiles(repoUrl);
+
+            // Herunterladen und Installieren der Anwendungen
+            await DownloadAndInstallApps(repositoryFiles, installDirectory);
+
+            // Anzeigen der installierten Apps
+            Console.WriteLine("Installed Apps:");
+            foreach (var file in repositoryFiles)
+            {
+                Console.WriteLine($"{file.Name} - {file.LocalPath}");
+            }
+
+            Console.WriteLine("Press any key to exit...");
+            Console.ReadKey();
+        }
+
+        static async Task<List<RepositoryFile>> DownloadRepositoryFiles(string repoUrl)
+        {
+            List<RepositoryFile> files = new List<RepositoryFile>();
+
+            using (HttpClient client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Add("User-Agent", "Geheim-Launcher");
+
+                try
+                {
+                    // Abrufen der Dateiliste aus dem GitHub-Repository
+                    HttpResponseMessage response = await client.GetAsync(repoUrl);
+                    response.EnsureSuccessStatusCode();
+                    string responseBody = await response.Content.ReadAsStringAsync();
+                    JArray jsonFiles = JArray.Parse(responseBody);
+
+                    // Extrahieren und Hinzufügen der Dateien zur Liste
+                    foreach (var file in jsonFiles)
+                    {
+                        string name = file["name"].ToString();
+                        string downloadUrl = file["download_url"].ToString();
+                        files.Add(new RepositoryFile { Name = name, DownloadUrl = downloadUrl });
+                    }
+                }
+                catch (HttpRequestException ex)
+                {
+                    Console.WriteLine($"Error retrieving repository files: {ex.Message}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error: {ex.Message}");
+                }
+            }
+
+            return files;
+        }
+
+        static async Task DownloadAndInstallApps(List<RepositoryFile> files, string installDirectory)
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                foreach (var file in files)
+                {
+                    string savePath = Path.Combine(installDirectory, file.Name);
+
+                    try
+                    {
+                        Console.WriteLine($"Downloading {file.Name}...");
+                        using (var response = await client.GetAsync(file.DownloadUrl))
+                        using (var fileStream = new FileStream(savePath, FileMode.Create, FileAccess.Write, FileShare.None))
+                        {
+                            await response.Content.CopyToAsync(fileStream);
+                        }
+
+                        file.LocalPath = savePath;
+                        Console.WriteLine($"Installed {file.Name} successfully.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error downloading/installing {file.Name}: {ex.Message}");
+                    }
+                }
+            }
         }
     }
 
-    public class MainWindow : Window
+    public class RepositoryFile
     {
-        private ListView installedAppsListView;
-        private MenuBar menu;
-
-        public MainWindow() : base("Geheim-Launcher")
-        {
-            // Erstellen des Menüs
-            menu = new MenuBar(new MenuBarItem[]
-            {
-                new MenuBarItem("_Menu", new MenuItem[]
-                {
-                    new MenuItem("_Home", "View installed applications"),
-                    new MenuItem("_Installations", "Install new applications"),
-                    new MenuItem("_Addons", "Manage addons"),
-                    new MenuItem("_Quit", "", () => Application.RequestStop())
-                })
-            });
-            Add(menu);
-
-            // Erstellen der Liste für installierte Apps
-            installedAppsListView = new ListView(new List<string> 
-            {
-                "GeheimDevKit.exe - C:\\Program Files\\GeheimDevKit",
-                "GeheimStudios.exe - C:\\Program Files\\GeheimStudios",
-                "InfinityEngine.exe - C:\\Program Files\\InfinityEngine",
-                "GeheimCodeSDK - C:\\Program Files\\GeheimCodeSDK",
-                "Gstream.exe - C:\\Program Files\\Gstream"
-            });
-            installedAppsListView.Width = Dim.Fill();
-            installedAppsListView.Height = Dim.Fill() - 1;
-            installedAppsListView.SelectedItemChanged += OnAppSelected;
-            Add(installedAppsListView);
-        }
-
-        private void OnAppSelected(ListViewItemEventArgs args)
-        {
-            var selectedApp = installedAppsListView.SelectedItem.ToString();
-            string appName = selectedApp.Split('-')[0].Trim();
-            string appPath = selectedApp.Split('-')[1].Trim();
-
-            try
-            {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = Path.Combine(appPath, $"{appName}.exe"),
-                    UseShellExecute = true
-                });
-            }
-            catch (Exception ex)
-            {
-                MessageBox.ErrorQuery("Error", $"Failed to start {appName}: {ex.Message}", "OK");
-            }
-        }
+        public string Name { get; set; }
+        public string DownloadUrl { get; set; }
+        public string LocalPath { get; set; }
     }
 }
