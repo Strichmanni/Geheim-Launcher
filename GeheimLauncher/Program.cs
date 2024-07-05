@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using Terminal.Gui;
 
 namespace GeheimLauncher
 {
@@ -8,39 +10,68 @@ namespace GeheimLauncher
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Geheim-Launcher gestartet...");
+            Application.Init();
 
-            string programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
-            string programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+            // Erstellen und anzeigen des Hauptfensters
+            var mainWindow = new MainWindow();
+            Application.Top.Add(mainWindow);
 
-            LaunchProgramsInDirectory(programFiles);
-            LaunchProgramsInDirectory(programFilesX86);
+            Application.Run();
+        }
+    }
 
-            Console.WriteLine("Drücken Sie eine beliebige Taste, um zu beenden...");
-            Console.ReadKey();
+    public class MainWindow : Window
+    {
+        private ListView installedAppsListView;
+        private MenuBar menu;
+
+        public MainWindow() : base("Geheim-Launcher")
+        {
+            // Erstellen des Menüs
+            menu = new MenuBar(new MenuBarItem[]
+            {
+                new MenuBarItem("_Menu", new MenuItem[]
+                {
+                    new MenuItem("_Home", "View installed applications"),
+                    new MenuItem("_Installations", "Install new applications"),
+                    new MenuItem("_Addons", "Manage addons"),
+                    new MenuItem("_Quit", "", () => Application.RequestStop())
+                })
+            });
+            Add(menu);
+
+            // Erstellen der Liste für installierte Apps
+            installedAppsListView = new ListView(new List<string> 
+            {
+                "GeheimDevKit.exe - C:\\Program Files\\GeheimDevKit",
+                "GeheimStudios.exe - C:\\Program Files\\GeheimStudios",
+                "InfinityEngine.exe - C:\\Program Files\\InfinityEngine",
+                "GeheimCodeSDK - C:\\Program Files\\GeheimCodeSDK",
+                "Gstream.exe - C:\\Program Files\\Gstream"
+            });
+            installedAppsListView.Width = Dim.Fill();
+            installedAppsListView.Height = Dim.Fill() - 1;
+            installedAppsListView.SelectedItemChanged += OnAppSelected;
+            Add(installedAppsListView);
         }
 
-        static void LaunchProgramsInDirectory(string directory)
+        private void OnAppSelected(ListViewItemEventArgs args)
         {
-            if (Directory.Exists(directory))
+            var selectedApp = installedAppsListView.SelectedItem.ToString();
+            string appName = selectedApp.Split('-')[0].Trim();
+            string appPath = selectedApp.Split('-')[1].Trim();
+
+            try
             {
-                string[] directories = Directory.GetDirectories(directory);
-                foreach (string dir in directories)
+                Process.Start(new ProcessStartInfo
                 {
-                    string exePath = Path.Combine(dir, Path.GetFileName(dir) + ".exe");
-                    if (File.Exists(exePath))
-                    {
-                        try
-                        {
-                            Process.Start(exePath);
-                            Console.WriteLine($"Gestartet: {exePath}");
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"Fehler beim Starten von {exePath}: {ex.Message}");
-                        }
-                    }
-                }
+                    FileName = Path.Combine(appPath, $"{appName}.exe"),
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.ErrorQuery("Error", $"Failed to start {appName}: {ex.Message}", "OK");
             }
         }
     }
