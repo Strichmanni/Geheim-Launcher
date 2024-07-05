@@ -3,14 +3,14 @@ using System.Windows.Forms;
 
 namespace GeheimLauncher
 {
-    public class Program
+    public static class Program
     {
         [STAThread]
         public static void Main()
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm()); // Hier wird das Hauptformular gestartet
+            Application.Run(new MainForm());
         }
     }
 }
