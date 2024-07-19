@@ -53,7 +53,7 @@ Geheim-Launcher is a simple application that helps you launch all installed appl
 
 2. **Clone the Repository**:
     ```sh
-    git clone https://github.com/<your-username>/Geheim-Launcher.git
+    git clone https://github.com/StrichManni/Geheim-Launcher.git
     cd Geheim-Launcher
     ```
 
